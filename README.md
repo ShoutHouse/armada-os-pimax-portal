@@ -1,6 +1,6 @@
 # Armada OS for Pimax Portal XR2 Gen 1 (SM8250 VR Variant)
 
-<img width="966" height="372" alt="pimaxarmadaos" src="https://github.com/user-attachments/assets/fa8fa6f2-f78d-4f3e-bac0-415b7306e262" />
+<img width="600" height="234" alt="pimaxarmadaos" src="https://github.com/user-attachments/assets/4abb7877-3bb2-422b-adcd-612c32e6d2dd" />
 
 
 Using the Armada framework, this hopes to serve as the collaborative staging ground for porting Armada OS to the Pimax Portal with the primary objective to bypass the closed Android ecosystem to establish a hardware accelerated Linux container baseline.
