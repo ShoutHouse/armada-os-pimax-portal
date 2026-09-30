@@ -1,106 +1,38 @@
-<p align="center">
-  <a href="https://armadaos.dev/">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset=".github/assets/armada-mark-white.svg">
-      <img src=".github/assets/armada-mark-black.svg" alt="Armada" width="112">
-    </picture>
-  </a>
-</p>
+# Armada OS for Pimax Portal (SM8250)
 
-<h1 align="center">Armada</h1>
+This repository serves as the collaborative staging ground for porting Armada OS to the Pimax Portal handheld. The primary objective is to bypass the closed Android ecosystem and establish a functional, hardware accelerated Linux container baseline using the Armada framework.
 
-<p align="center"><strong>SteamOS-like Linux for ARM handhelds</strong></p>
+This project is currently in the exploratory and reverse engineering phase. 
 
-<p align="center">
-  Armada brings Steam, FEX, Proton, and a full Linux desktop to supported ARM64 gaming handhelds.
-</p>
+## System Architecture & Target
 
-<p align="center">
-  <a href="https://github.com/armada-os/armada/actions/workflows/build.yml"><img alt="Build status" src="https://github.com/armada-os/armada/actions/workflows/build.yml/badge.svg?branch=main"></a>
-  <a href="https://armadaos.dev/"><img alt="Documentation" src="https://img.shields.io/badge/docs-armadaos.dev-18181a?style=flat"></a>
-  <a href="LICENSE.md"><img alt="GPL-2.0-or-later license" src="https://img.shields.io/badge/license-GPL--2.0--or--later-18181a?style=flat"></a>
-  <a href="https://discord.gg/HdmdSxTD5S"><img alt="Discord community" src="https://img.shields.io/badge/chat-Discord-5865F2?style=flat&amp;logo=discord&amp;logoColor=white"></a>
-</p>
+* **SoC:** Qualcomm Snapdragon XR2 Gen 1 (SM8250 VR Variant)
+* **Target Framework:** Armada OS 
+* **Hardware:** Pimax Portal (Standard and QLED models)
 
-<p align="center">
-  <a href="https://armadaos.dev/getting-started/flashing-to-an-sd-card/"><strong>Install Armada</strong></a>
-  ·
-  <a href="https://armadaos.dev/devices/supported-devices/">Supported devices</a>
-  ·
-  <a href="https://armadaos.dev/">Documentation</a>
-  ·
-  <a href="https://armadaos.dev/troubleshooting/known-issues/">Known issues</a>
-</p>
+## Engineering Challenges & Roadmap
 
-> [!WARNING]
-> Armada is prototype software under active development. Installation requires
-> bootloader changes that can brick a device, corrupt partitions, or cause data
-> loss. Check the current [supported-device list](https://armadaos.dev/devices/supported-devices/),
-> back up your data, and read the complete [installation guide](https://armadaos.dev/getting-started/flashing-to-an-sd-card/)
-> before proceeding.
+Stock Armada images function on alternative handhelds due to existing bootloader scripts and standardized inputs. The Pimax Portal lacks this infrastructure. Bringing this port to a bootable state requires solving three specific hardware isolation issues. 
 
-## About Armada
+Contributors with experience in Qualcomm boot sequences, uinput mapping, and Linux kernel patching are highly encouraged to step in.
 
-Armada is a gaming-focused Linux distribution built on
-[Fedora bootc](https://github.com/bootc-dev/bootc) with device support derived
-from [ROCKNIX](https://github.com/ROCKNIX). It combines a console-first Steam
-experience with a full KDE Plasma desktop while remaining an open, image-based
-operating system.
+### 1. Boot Sequence and Partition Mapping
+The Portal requires a custom bootloader hook to redirect initialization away from the native Android boot image and into the Fedora based Linux container.
+* **Goal:** Map the complete SM8250 logical partition table.
+* **Goal:** Develop a custom boot script that safely hijacks the boot process without altering the `persist` or `calit` hardware calibration partitions.
 
-Highlights include:
+### 2. Input Wrapper Reverse Engineering
+The magnetic detachable controllers do not map to standard generic gamepad layouts. They rely on closed Hardware Abstraction Layers and proprietary Qualcomm binaries.
+* **Goal:** Extract and analyze raw hardware dumps from the stock firmware to document the serial protocols and polling rates.
+* **Goal:** Write a custom kernel level input wrapper that translates these proprietary signals into standard Linux gamepad event nodes for native Steam Input recognition.
 
-- ARM64 Steam with FEX translation and Proton compatibility
-- Gaming Mode and a full KDE Plasma Desktop Mode
-- Over-the-air operating system updates
-- SD-card boot with optional internal-storage installation
-- Handheld-focused power, fan, controller, and calibration controls
-- Per-game compatibility settings through Armada Control
+### 3. Thermal Management Integration
+The Portal utilizes an active cooling fan that relies on proprietary system triggers to operate. Stock Linux kernels will not recognize this hardware natively.
+* **Goal:** Isolate the fan control daemon.
+* **Goal:** Integrate a custom thermal script into the early boot sequence to prevent hardware throttling and ensure safe operating temperatures during OS load.
 
-## Documentation
+## Contribution Guidelines
 
-The [Armada documentation](https://armadaos.dev/) is the source of truth for
-device support, installation, updates, current limitations, and recovery. Use
-the guides there rather than instructions copied from older releases or posts.
+This is an open engineering effort. If you are working on a similar Snapdragon 865 hardware enablement project or want to tackle one of the specific roadblocks listed above, please open an issue to discuss your approach or submit a pull request.
 
-| I want to… | Guide |
-|---|---|
-| Install Armada | [Flash to an SD card](https://armadaos.dev/getting-started/flashing-to-an-sd-card/) |
-| Check my handheld | [Supported devices](https://armadaos.dev/devices/supported-devices/) |
-| Learn the interface | [Using Armada](https://armadaos.dev/using-armada/) |
-| Update an installation | [Updating](https://armadaos.dev/getting-started/updating/) |
-| Find help | [FAQ](https://armadaos.dev/troubleshooting/frequently-asked-questions/) · [Known issues](https://armadaos.dev/troubleshooting/known-issues/) |
-| Report a bug | [Github Issues](https://github.com/armada-os/armada/issues)
-
-## Development
-
-This repository assembles the Armada bootc image and its flashable disk images,
-along with the upstream-derived packages it ships (see
-[`packages/`](packages/README.md)). The development recipes require
-[just](https://just.systems/) and [Podman](https://podman.io/):
-
-```console
-$ just check     # Run the test suite and check recipe formatting
-$ just packages  # Build the packages the image consumes (slow from cold)
-$ just build     # Build the local bootc container image
-$ just --list    # Show disk-image, VM, and other development recipes
-```
-
-Each package builds as a stage in `packages/Containerfile` and is published
-under a tag derived from its own sources, so an unchanged package is never
-rebuilt. `just build` uses a locally built package when you have one and the
-published image otherwise, so you only build what you are changing.
-
-Issues and pull requests are welcome. For installation or device support, check
-the [troubleshooting documentation](https://armadaos.dev/troubleshooting/frequently-asked-questions/)
-or ask in the [Armada Discord community](https://discord.gg/HdmdSxTD5S).
-
-## Credits
-
-See the [project credits](https://armadaos.dev/project/credits/) for the upstream
-projects and contributors that make Armada possible. The Armada logo was
-created by [Rax](https://github.com/Raxcoms).
-
-## License
-
-Armada's own code is licensed under **GPL-2.0-or-later**. Bundled components
-retain their upstream licenses. See [LICENSE.md](LICENSE.md).
+Ensure all pull requests target the `development` branch and include detailed commit messages specifying the exact hardware subsystem being modified.
